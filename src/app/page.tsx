@@ -1,101 +1,265 @@
+"use client";
+
+import { useState, useRef } from "react";
 import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Star, MapPin, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export default function Home() {
+export default function LandingPage() {
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const logoTimeoutRef = useRef(null);
+  const router = useRouter();
+
+  const handleLogoHover = () => {
+    logoTimeoutRef.current = setTimeout(() => {
+      setIsAdminModalOpen(true);
+    }, 2500);
+  };
+
+  const handleLogoHoverEnd = () => {
+    if (logoTimeoutRef.current) {
+      clearTimeout(logoTimeoutRef.current);
+    }
+  };
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid password');
+      }
+
+      router.push('/admin');
+    } catch (error) {
+      toast.error('Invalid admin credentials');
+    } finally {
+      setIsLoading(false);
+      setPassword("");
+      setIsAdminModalOpen(false);
+    }
+  };
+
+  const handleStoreClick = (e) => {
+    e.preventDefault();
+    setIsComingSoonOpen(true);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-custom-yellow text-custom-brown">
+      {/* Hero Section - Full Height */}
+      <section className="h-screen relative flex flex-col">
+        {/* Logo Text */}
+        <div className="absolute top-8 left-8">
+          <h1 className="text-2xl font-bold text-custom-brown">TORO</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+        {/* Centered Logo */}
+        <div className="flex-1 flex items-center justify-center">
+          <div
+            className="relative"
+            onMouseEnter={handleLogoHover}
+            onMouseLeave={handleLogoHoverEnd}
+          >
+            <div className="w-[min(80vw,24rem)] h-[min(80vw,24rem)] relative cursor-pointer">
+              <Image
+                src="/logo.png"
+                alt="ToroEats Logo"
+                fill
+                style={{ objectFit: "contain" }}
+                priority
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-bounce">
+          <ChevronDown className="h-8 w-8 text-custom-brown opacity-50" />
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 bg-white/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="flex flex-col items-center text-center p-6">
+              <Search className="h-12 w-12 text-custom-brown mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-custom-brown">
+                Discover Local Gems
+              </h3>
+              <p className="text-custom-brown/80">
+                Find hidden culinary treasures in your neighborhood, from
+                authentic street food to fine dining.
+              </p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6">
+              <Star className="h-12 w-12 text-custom-brown mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-custom-brown">
+                Trusted Reviews
+              </h3>
+              <p className="text-custom-brown/80">
+                Read honest reviews from real food enthusiasts to find the
+                perfect dining spot.
+              </p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6">
+              <MapPin className="h-12 w-12 text-custom-brown mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-custom-brown">
+                Easy Navigation
+              </h3>
+              <p className="text-custom-brown/80">
+                Find restaurants near you with detailed directions and essential
+                information.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* App Store Link */}
+      <section className="py-16 bg-custom-yellow">
+        <div className="container mx-auto px-4 text-center">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-custom-brown">
+              Get the Toro App
+            </h3>
+            <div className="flex justify-center space-x-4">
+              <a
+                href="#"
+                className="h-14 hover:opacity-80 transition-opacity"
+                onClick={handleStoreClick}
+              >
+                <Image
+                  src="/app-store-badge.png"
+                  alt="Download on the App Store"
+                  width={156}
+                  height={56}
+                  className="h-14 w-auto"
+                />
+              </a>
+              <a
+                href="#"
+                className="h-14 hover:opacity-80 transition-opacity"
+                onClick={handleStoreClick}
+              >
+                <Image
+                  src="/play-store-badge.png"
+                  alt="Get it on Google Play"
+                  width={156}
+                  height={56}
+                  className="h-14 w-auto"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-custom-brown/20 py-12 bg-white/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="h-8 w-32 relative">
+              <Image
+                src="/logo.png"
+                alt="ToroEats Logo"
+                fill
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            <div className="flex space-x-6 text-sm mt-4 md:mt-0">
+              <a
+                href="#"
+                className="text-custom-brown/70 hover:text-custom-brown"
+              >
+                About
+              </a>
+              <a
+                href="#"
+                className="text-custom-brown/70 hover:text-custom-brown"
+              >
+                Contact
+              </a>
+              <a
+                href="#"
+                className="text-custom-brown/70 hover:text-custom-brown"
+              >
+                Privacy
+              </a>
+              <a
+                href="#"
+                className="text-custom-brown/70 hover:text-custom-brown"
+              >
+                Terms
+              </a>
+            </div>
+          </div>
+          <div className="mt-4 text-center text-sm text-custom-brown/60">
+            © {new Date().getFullYear()} Toro Technologies LLC. All rights
+            reserved.
+          </div>
+        </div>
       </footer>
+
+      {/* Admin Login Modal */}
+      <Dialog open={isAdminModalOpen} onOpenChange={setIsAdminModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-custom-brown">
+              Admin Access
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdminLogin} className="space-y-4 py-4">
+            <Input
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Loading..." : "Access Admin Panel"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Coming Soon Dialog */}
+      <Dialog open={isComingSoonOpen} onOpenChange={setIsComingSoonOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Coming Soon!</DialogTitle>
+          </DialogHeader>
+          <p className="text-center text-lg text-custom-brown/80">
+            The Toro app launches January 1st, 2025. Stay tuned!
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

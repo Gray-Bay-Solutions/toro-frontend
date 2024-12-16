@@ -1,5 +1,5 @@
 "use client"
-import React from 'react';
+import React, {ReactNode} from 'react';
 import { 
   Home,
   LogOut,
@@ -12,6 +12,10 @@ import {
 import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+
+interface AdminLayoutProps {
+  children: ReactNode;
+}
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -70,7 +74,7 @@ const Sidebar = () => {
   );
 };
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <div className="min-h-screen">
       <Sidebar />

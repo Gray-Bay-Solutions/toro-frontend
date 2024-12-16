@@ -5,6 +5,7 @@ import DataTable from '@/components/data-table';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Utensils, Star, MapPin, Phone, Globe, MessageCircle, CheckCircle2 } from "lucide-react";
 import { restaurantsApi } from '@/services';
+import { Restaurant } from '@/types/admin';
 
 const columns = [
   {
@@ -41,7 +42,7 @@ const columns = [
   {
     header: "Status",
     accessorKey: "isClosed",
-    render: (value) => (
+    render: (value: string) => (
       <span className={`px-2 py-1 rounded-full text-xs ${
         value ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
       }`}>
@@ -51,8 +52,10 @@ const columns = [
   }
 ];
 
+const initialRestaurants: Restaurant[] = [];
+
 const RestaurantsPage = () => {
-  const [restaurants, setRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,7 +73,7 @@ const RestaurantsPage = () => {
     fetchRestaurants();
   }, []);
 
-  const handleAdd = async (data) => {
+  const handleAdd = async (data: any) => {
     try {
       const newRestaurant = {
         ...data,
@@ -90,8 +93,11 @@ const RestaurantsPage = () => {
     }
   };
 
-  const handleUpdate = async (updatedData) => {
+  const handleUpdate = async (updatedData: Partial<Restaurant>) => {
     try {
+      if (!updatedData.id) {
+        throw new Error("Error getting restaurant ID");
+      }
       const response = await restaurantsApi.update(updatedData.id, updatedData);
       setRestaurants(restaurants.map(restaurant => 
         restaurant.id === updatedData.id ? response.data : restaurant
@@ -101,7 +107,7 @@ const RestaurantsPage = () => {
     }
   };
 
-  const handleDelete = async (data) => {
+  const handleDelete = async (data: { id: string; }) => {
     try {
       await restaurantsApi.delete(data.id);
       setRestaurants(restaurants.filter(r => r.id !== data.id));

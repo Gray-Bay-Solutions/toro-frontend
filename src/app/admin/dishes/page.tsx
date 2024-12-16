@@ -26,7 +26,7 @@ export default function DishesPage() {
       accessorKey: "price",
       icon: DollarSign,
       isNumber: true,
-      render: (value: number) => `$${parseFloat(value).toFixed(2)}`
+      render: (value: string) => `$${parseFloat(value).toFixed(2)}`
     },
     {
       header: "Rating",

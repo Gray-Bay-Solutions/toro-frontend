@@ -20,7 +20,7 @@ export default function LandingPage() {
   const [password, setPassword] = useState("");
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const logoTimeoutRef = useRef(null);
+  const logoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   const handleLogoHover = () => {
@@ -35,7 +35,7 @@ export default function LandingPage() {
     }
   };
 
-  const handleAdminLogin = async (e) => {
+  const handleAdminLogin = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -62,7 +62,7 @@ export default function LandingPage() {
     }
   };
 
-  const handleStoreClick = (e) => {
+  const handleStoreClick = (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setIsComingSoonOpen(true);
   };

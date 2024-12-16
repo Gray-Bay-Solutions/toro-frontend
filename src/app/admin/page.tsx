@@ -36,7 +36,7 @@ export default function Home() {
     { value: "seattle", label: "Seattle" },
   ];
 
-  const handleCityChange = (value) => {
+  const handleCityChange = (value: string) => {
     const cityName = cities.find(city => city.value === value)?.label || value;
     setCurrentCity(cityName);
     setIsScrapingActive(false); // Reset scraping state when city changes

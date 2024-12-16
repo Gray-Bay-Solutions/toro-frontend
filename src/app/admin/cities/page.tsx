@@ -59,7 +59,7 @@ export default function CitiesPage() {
         ...data,
         location: { latitude: 0, longitude: 0 },
         restaurants: [],
-        status: 'Pending',
+        status: 'Pending' as const,
         totalRestaurants: 0,
         lastScraped: null
       };

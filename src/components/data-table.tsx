@@ -46,6 +46,14 @@ interface DataTableProps {
   loading?: boolean;
 }
 
+interface FormData {
+  [key: string]: string;
+}
+
+interface EditingData {
+  [key: string]: string | number | boolean;
+}
+
 const DataTable: React.FC<DataTableProps> = ({ 
   columns, 
   data, 
@@ -56,8 +64,8 @@ const DataTable: React.FC<DataTableProps> = ({
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [editingData, setEditingData] = useState(null);
+  const [formData, setFormData] = useState<FormData>({});
+  const [editingData, setEditingData] = useState<EditingData>({});
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -76,7 +84,7 @@ const DataTable: React.FC<DataTableProps> = ({
     e.preventDefault();
     if (editingData) {
       onUpdate(editingData);
-      setEditingData(null);
+      setEditingData({});
       setIsEditDialogOpen(false);
     }
   };
@@ -189,7 +197,7 @@ const DataTable: React.FC<DataTableProps> = ({
                     {column.header}
                   </label>
                   <Input
-                    value={editingData[column.accessorKey] || ''}
+                    value={String(editingData[column.accessorKey] || '')}
                     onChange={(e) => 
                       setEditingData(prev => ({
                         ...prev,

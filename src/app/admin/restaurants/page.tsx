@@ -15,7 +15,8 @@ const columns = [
   },
   {
     header: "Address",
-    accessorKey: "address",
+    accessorKey: "address.full",
+    accessorFn: (row: Restaurant) => row.address?.full,
     icon: MapPin
   },
   {
@@ -30,25 +31,32 @@ const columns = [
   },
   {
     header: "Rating",
-    accessorKey: "averageRating",
+    accessorKey: "rating.average",
+    accessorFn: (row: Restaurant) => row.rating?.average?.toFixed(1) || '0.0',
     icon: Star,
     isNumber: true
   },
   {
     header: "Reviews",
-    accessorKey: "totalRatings",
+    accessorKey: "rating.total",
+    accessorFn: (row: Restaurant) => row.rating?.total || 0,
     isNumber: true
   },
   {
     header: "Status",
-    accessorKey: "isClosed",
-    render: (value: string) => (
+    accessorKey: "is_active",
+    render: (value: boolean) => (
       <span className={`px-2 py-1 rounded-full text-xs ${
-        value ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+        !value ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
       }`}>
-        {value ? 'Closed' : 'Open'}
+        {!value ? 'Closed' : 'Open'}
       </span>
     )
+  },
+  {
+    header: "Price",
+    accessorKey: "price_level",
+    render: (value: string) => value || 'Unspecified'
   }
 ];
 
@@ -62,6 +70,7 @@ const RestaurantsPage = () => {
     const fetchRestaurants = async () => {
       try {
         const response = await restaurantsApi.getAll();
+        console.log(response.data)
         setRestaurants(response.data);
       } catch (error) {
         console.error('Error fetching restaurants:', error);
@@ -77,14 +86,44 @@ const RestaurantsPage = () => {
     try {
       const newRestaurant = {
         ...data,
-        createdAt: new Date(),
-        location: { latitude: 0, longitude: 0 },
-        totalRatings: 0,
-        averageRating: 0,
-        businessHours: [],
-        isClosed: false,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+        last_scraped: new Date(),
+        data_source: 'manual' as const,
+        google_place_id: null,
+        address: {
+          full: data.address || '',
+          street: null,
+          city: '',
+          state: '',
+          zip: '',
+          country: 'US',
+          coordinates: {
+            latitude: 0,
+            longitude: 0
+          }
+        },
+        rating: {
+          average: 0,
+          total: 0,
+          yelp: {
+            rating: 0,
+            total: 0
+          },
+          google: null
+        },
+        images: {
+          primary: null,
+          gallery: []
+        },
         categories: [],
-        is_verified: false
+        transactions: [],
+        attributes: {},
+        operating_hours: {
+          periods: [],
+          weekday_text: []
+        }
       };
       const response = await restaurantsApi.create(newRestaurant);
       setRestaurants([...restaurants, response.data]);
@@ -118,10 +157,10 @@ const RestaurantsPage = () => {
 
   // Calculate stats
   const averageRating = restaurants.length 
-    ? restaurants.reduce((acc, curr) => acc + (curr.averageRating || 0), 0) / restaurants.length 
+    ? restaurants.reduce((acc, curr) => acc + (curr.rating.average || 0), 0) / restaurants.length 
     : 0;
-  const totalReviews = restaurants.reduce((acc, curr) => acc + (curr.totalRatings || 0), 0);
-  const verifiedCount = restaurants.filter(r => r.is_verified).length;
+  const totalReviews = restaurants.reduce((acc, curr) => acc + (curr.rating.total || 0), 0);
+  const verifiedCount = restaurants.filter(r => r.data_source === 'yelp' || r.data_source === 'google').length;
 
   return (
     <div className="space-y-6 p-6">

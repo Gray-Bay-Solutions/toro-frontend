@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -26,15 +26,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
-import { useState } from "react";
 
 interface Column {
   header: string;
   accessorKey: string;
+  accessorFn?: (row: any) => any;
   icon?: any;
   isNumber?: boolean;
   isStatus?: boolean;
-  render?: (value: any) => React.ReactNode;
+  render?: (value: any, row?: any) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -44,6 +44,7 @@ interface DataTableProps {
   onUpdate: (data: any) => void;
   onDelete: (data: any) => void;
   loading?: boolean;
+  pageSize?: number;
 }
 
 interface FormData {
@@ -54,19 +55,38 @@ interface EditingData {
   [key: string]: string | number | boolean;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ 
-  columns, 
-  data, 
-  onAdd, 
-  onUpdate, 
+interface PaginationState {
+  pageIndex: number;
+  pageSize: number;
+}
+
+const getNestedValue = (obj: any, path: string) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
+const DataTable: React.FC<DataTableProps> = ({
+  columns,
+  data,
+  onAdd,
+  onUpdate,
   onDelete,
-  loading = false
+  loading = false,
+  pageSize = 25
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({});
   const [editingData, setEditingData] = useState<EditingData>({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: pageSize
+  });
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, pageIndex: 0 }));
+  }, [searchTerm]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,15 +109,28 @@ const DataTable: React.FC<DataTableProps> = ({
     }
   };
 
-  const filteredData = data.filter(item => 
-    Object.entries(item).some(([key, value]) => 
-      columns.some(col => col.accessorKey === key && 
-        value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  const filteredData = data.filter(item =>
+    Object.entries(item).some(([key, value]) =>
+      columns.some(col => {
+        const cellValue = col.accessorFn 
+          ? col.accessorFn(item)
+          : getNestedValue(item, col.accessorKey);
+        return cellValue?.toString().toLowerCase().includes(searchTerm.toLowerCase());
+      })
     )
   );
 
-  const renderCell = (column: Column, value: any) => {
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredData.length / pagination.pageSize);
+  const startIndex = pagination.pageIndex * pagination.pageSize;
+  const endIndex = startIndex + pagination.pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const renderCell = (column: Column, row: any) => {
+    let value = column.accessorFn
+      ? column.accessorFn(row)
+      : getNestedValue(row, column.accessorKey);
+
     if (column.render) {
       return column.render(value);
     }
@@ -105,8 +138,8 @@ const DataTable: React.FC<DataTableProps> = ({
     if (column.isStatus) {
       return (
         <span className={`px-2 py-1 rounded-full text-xs ${
-          value?.toLowerCase() === 'active' ? 'bg-green-100 text-green-800' : 
-          value?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+          value?.toLowerCase() === 'active' ? 'bg-green-100 text-green-800' :
+          value?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
           'bg-gray-100 text-gray-800'
         }`}>
           {value}
@@ -114,7 +147,7 @@ const DataTable: React.FC<DataTableProps> = ({
       );
     }
 
-    if (column.isNumber) {
+    if (column.isNumber && value !== undefined) {
       return Number(value).toLocaleString();
     }
 
@@ -128,8 +161,55 @@ const DataTable: React.FC<DataTableProps> = ({
       );
     }
 
-    return value;
+    return value || '-';
   };
+
+  const PaginationControls = () => (
+    <div className="flex items-center justify-between px-4 py-4 border-t">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>
+          Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} results
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPagination(prev => ({ ...prev, pageIndex: 0 }))}
+          disabled={pagination.pageIndex === 0 || loading}
+        >
+          First
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPagination(prev => ({ ...prev, pageIndex: prev.pageIndex - 1 }))}
+          disabled={pagination.pageIndex === 0 || loading}
+        >
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground px-2">
+          Page {pagination.pageIndex + 1} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPagination(prev => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
+          disabled={pagination.pageIndex === totalPages - 1 || loading}
+        >
+          Next
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPagination(prev => ({ ...prev, pageIndex: totalPages - 1 }))}
+          disabled={pagination.pageIndex === totalPages - 1 || loading}
+        >
+          Last
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -153,7 +233,7 @@ const DataTable: React.FC<DataTableProps> = ({
                   </label>
                   <Input
                     value={formData[column.accessorKey] || ''}
-                    onChange={(e) => 
+                    onChange={(e) =>
                       setFormData(prev => ({
                         ...prev,
                         [column.accessorKey]: e.target.value
@@ -198,7 +278,7 @@ const DataTable: React.FC<DataTableProps> = ({
                   </label>
                   <Input
                     value={String(editingData[column.accessorKey] || '')}
-                    onChange={(e) => 
+                    onChange={(e) =>
                       setEditingData(prev => ({
                         ...prev,
                         [column.accessorKey]: e.target.value
@@ -209,8 +289,8 @@ const DataTable: React.FC<DataTableProps> = ({
                 </div>
               ))}
               <div className="flex space-x-2 justify-end">
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
@@ -240,8 +320,8 @@ const DataTable: React.FC<DataTableProps> = ({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell 
-                  colSpan={columns.length + 1} 
+                <TableCell
+                  colSpan={columns.length + 1}
                   className="h-24 text-center"
                 >
                   <div className="flex items-center justify-center space-x-2">
@@ -252,8 +332,8 @@ const DataTable: React.FC<DataTableProps> = ({
               </TableRow>
             ) : filteredData.length === 0 ? (
               <TableRow>
-                <TableCell 
-                  colSpan={columns.length + 1} 
+                <TableCell
+                  colSpan={columns.length + 1}
                   className="h-24 text-center"
                 >
                   <div className="flex flex-col items-center justify-center space-y-1">
@@ -263,11 +343,11 @@ const DataTable: React.FC<DataTableProps> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredData.map((row, i) => (
+              paginatedData.map((row, i) => (
                 <TableRow key={i}>
                   {columns.map((column) => (
                     <TableCell key={column.accessorKey}>
-                      {renderCell(column, row[column.accessorKey])}
+                      {renderCell(column, row)}
                     </TableCell>
                   ))}
                   <TableCell>
@@ -298,6 +378,7 @@ const DataTable: React.FC<DataTableProps> = ({
             )}
           </TableBody>
         </Table>
+        <PaginationControls />
       </div>
     </div>
   );

@@ -127,7 +127,7 @@ const DataTable: React.FC<DataTableProps> = ({
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
   const renderCell = (column: Column, row: any) => {
-    let value = column.accessorFn
+    const value = column.accessorFn
       ? column.accessorFn(row)
       : getNestedValue(row, column.accessorKey);
 

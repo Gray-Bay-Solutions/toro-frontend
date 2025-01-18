@@ -76,9 +76,9 @@ const Sidebar = () => {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
       <Sidebar />
-      <div className="pl-56 h-full">
+      <div className="pl-56 min-h-screen">
         <main className="p-8">
           {children}
         </main>

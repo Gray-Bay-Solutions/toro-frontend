@@ -3,16 +3,21 @@
 import { useState, useEffect } from 'react';
 import DataTable from '@/components/data-table';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Star, Store, Users, Calendar } from "lucide-react";
+import { MessageCircle, Star, Store, Users, Calendar, User } from "lucide-react";
 import { reviewsApi } from '@/services';
 import { Review } from '@/types/admin';
 
 const columns = [
   {
-    header: "Restaurant",
-    accessorKey: "restaurant_name",
+    header: "Dish",
+    accessorKey: "dish",
     icon: Store,
-    render: (value: string) => value || 'Unknown Restaurant'
+    render: (dish: Dish) => (
+      <div className="flex flex-col">
+        <span className="font-medium">{dish.name}</span>
+        <span className="text-xs text-muted-foreground">{dish.restaurant.name}</span>
+      </div>
+    )
   },
   {
     header: "Rating",
@@ -20,17 +25,18 @@ const columns = [
     icon: Star,
     render: (value: number) => (
       <div className="flex items-center">
-        <span className={`px-2 py-1 rounded-full text-xs
-          ${value >= 4 ? 'bg-green-100 text-green-800' : 
-            value >= 3 ? 'bg-yellow-100 text-yellow-800' : 
-            'bg-red-100 text-red-800'}`}>
-          {value?.toFixed(1) || '0.0'}
+        <span className={`px-2 py-1 rounded-full text-xs ${
+          value >= 7 ? 'bg-green-100 text-green-800' :
+          value >= 5 ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {value?.toFixed(1) || '0'}
         </span>
       </div>
     )
   },
   {
-    header: "Review",
+    header: "Comment",
     accessorKey: "comment",
     icon: MessageCircle,
     render: (value: string) => (
@@ -38,17 +44,19 @@ const columns = [
     )
   },
   {
-    header: "Reviewer",
-    accessorKey: "author",
+    header: "Author",
+    accessorKey: "author_name",
     icon: Users,
-    render: (value: any) => (
+    cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <span>{value?.name || 'Anonymous'}</span>
-        {value?.is_verified && (
-          <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-            Verified
-          </span>
+        {row.original.profile_photo_url && (
+          <img 
+            src={row.original.profile_photo_url} 
+            alt={row.original.author_name}
+            className="w-6 h-6 rounded-full"
+          />
         )}
+        <span>{row.original.author_name || 'Anonymous'}</span>
       </div>
     )
   },
@@ -57,8 +65,8 @@ const columns = [
     accessorKey: "source",
     render: (value: string) => (
       <span className={`px-2 py-1 rounded-full text-xs ${
-        value === 'google' ? 'bg-green-100 text-green-800' : 
-        'bg-purple-100 text-purple-800'
+        value === 'toro' ? 'bg-purple-100 text-purple-800' :
+        'bg-green-100 text-green-800'
       }`}>
         {(value || 'UNKNOWN').toUpperCase()}
       </span>
@@ -68,9 +76,10 @@ const columns = [
     header: "Date",
     accessorKey: "timestamp",
     icon: Calendar,
-    render: (value: Date) => {
+    render: (value: { _seconds: number; _nanoseconds: number }) => {
       try {
-        return new Date(value).toLocaleDateString();
+        const date = new Date(value._seconds * 1000);
+        return date.toLocaleDateString();
       } catch {
         return 'Invalid date';
       }

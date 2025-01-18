@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Utensils, Star, MapPin, Phone, Globe, MessageCircle, CheckCircle2 } from "lucide-react";
 import { restaurantsApi } from '@/services';
 import { Restaurant } from '@/types/admin';
+import { isBusinessOpen } from '@/lib/utils';
 
 const columns = [
   {
@@ -16,8 +17,18 @@ const columns = [
   {
     header: "Address",
     accessorKey: "address.full",
-    accessorFn: (row: Restaurant) => row.address?.full,
-    icon: MapPin
+    accessorFn: (row: Restaurant) => row.address,
+    icon: MapPin,
+    render: (address: string) => (
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        {address}
+      </a>
+    )
   },
   {
     header: "Phone",
@@ -26,37 +37,55 @@ const columns = [
   },
   {
     header: "Website",
-    accessorKey: "website",
-    icon: Globe
+    accessorKey: "website", 
+    icon: Globe,
+    render: (website: string) => {
+      const displayUrl = website.length > 30 ? website.substring(0, 30) + '...' : website;
+      return (
+        <a 
+          href={website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+          title={website}
+        >
+          {displayUrl}
+        </a>
+      );
+    }
   },
   {
     header: "Rating",
-    accessorKey: "rating.average",
-    accessorFn: (row: Restaurant) => row.rating?.average?.toFixed(1) || '0.0',
+    accessorKey: "averageRating",
     icon: Star,
     isNumber: true
   },
   {
     header: "Reviews",
-    accessorKey: "rating.total",
-    accessorFn: (row: Restaurant) => row.rating?.total || 0,
+    accessorKey: "totalRatings",
     isNumber: true
   },
   {
     header: "Status",
-    accessorKey: "is_active",
-    render: (value: boolean) => (
-      <span className={`px-2 py-1 rounded-full text-xs ${
-        !value ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-      }`}>
-        {!value ? 'Closed' : 'Open'}
-      </span>
-    )
+    accessorKey: "businessHours",
+    render: (hours: string[]) => {
+      const isOpen = isBusinessOpen(hours);
+      return (
+        <span className={`px-2 py-1 rounded-full text-xs ${
+          isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {isOpen ? 'Open' : 'Closed'}
+        </span>
+      );
+    }
   },
   {
     header: "Price",
     accessorKey: "price_level",
-    render: (value: string) => value || 'Unspecified'
+    render: (value: number) => {
+      if (!value) return 'Unspecified';
+      return '$'.repeat(value);
+    }
   }
 ];
 
@@ -157,10 +186,10 @@ const RestaurantsPage = () => {
 
   // Calculate stats
   const averageRating = restaurants.length 
-    ? restaurants.reduce((acc, curr) => acc + (curr.rating.average || 0), 0) / restaurants.length 
+    ? restaurants.reduce((acc, curr) => acc + (curr.averageRating || 0), 0) / restaurants.length 
     : 0;
-  const totalReviews = restaurants.reduce((acc, curr) => acc + (curr.rating.total || 0), 0);
-  const verifiedCount = restaurants.filter(r => r.data_source === 'yelp' || r.data_source === 'google').length;
+  const totalReviews = restaurants.reduce((acc, curr) => acc + (curr.totalRatings || 0), 0);
+  const verifiedCount = restaurants.filter(r => r.is_verified).length;
 
   return (
     <div className="space-y-6 p-6">

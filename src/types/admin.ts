@@ -19,104 +19,27 @@ export interface BusinessHoursData {
 }
 
 export interface Restaurant {
-  id?: string;
-  // Basic Info
-  name: string;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-  last_scraped: Date;
-
-  // External IDs & Sources
-  yelp_id: string;
-  google_place_id: string | null;
-  data_source: 'yelp' | 'google' | 'manual';
-
-  // Contact & Location
-  phone: string;
-  website: string;
-  address: {
-    full: string;
-    street: string | null;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    coordinates: {
-      latitude: number;
-      longitude: number;
-    };
-  };
-
-  // Business Details
+  id: string,
+  address: string;
+  averageRating: number;
+  businessHours: string[];
   categories: string[];
-  price_level: string | 'unspecified';
-  operating_hours: {
-    periods: {
-      open: {
-        day: number;  // 0-6 (Sunday-Saturday)
-        time: string; // "1130" format
-      };
-      close: {
-        day: number;
-        time: string;
-      };
-    }[];
-    weekday_text: string[];
+  createdAt: string;
+  imageUrl: string;
+  isClosed: boolean;
+  is_verified: boolean;
+  location: {
+    latitude: number;
+    longitude: number;
   };
-
-  // Ratings & Reviews
-  rating: {
-    average: number;
-    total: number;
-    yelp: {
-      rating: number;
-      total: number;
-    };
-    google: {
-      rating: number | null;
-      total: number | null;
-    } | null;
-  };
-
-  // Media
-  images: {
-    primary: string | null;
-    gallery: string[];
-  };
-
-  // Additional Features
-  transactions: string[];
-  attributes: {
-    has_takeout?: boolean;
-    accepts_reservations?: boolean;
-    [key: string]: boolean | undefined;
-  };
-}
-
-export interface Review {
-  id?: string;
-  type: 'restaurant' | 'dish';
-  source: 'google' | 'app';
-  review_type: 'external' | 'internal';
-  comment: string;
-  rating: number;
-  timestamp: Date;
-  restaurant_id: string;
-  restaurant_name: string;
-  author: {
-    name: string;
-    user_id?: string;
-    profile_photo: string | null;
-    is_verified: boolean;
-  };
-  metadata: {
-    platform: 'google' | 'ios' | 'android' | 'web';
-    relative_time?: string;
-    original_timestamp?: string;
-    verified_purchase?: boolean;
-    edited?: boolean;
-  };
+  name: string;
+  phone: string;
+  price_level: number;
+  state: string;
+  totalRatings: number;
+  website: string;
+  yelpId: string;
+  zip: string;
 }
 
 // Optional: You might want this type for the operating hours
@@ -136,12 +59,11 @@ export interface Dish {
   name: string;
   description: string;
   price: number;
-  rating: number;
-  restaurant: string; // restaurant reference
-  city: string; // city reference
+  section: string;
+  restaurant: string;
   image_url: string;
-  review_count: number;
-  average_rating: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DashboardStats {
@@ -170,4 +92,26 @@ export interface User {
   location_enabled: boolean;
   phone_number: string;
   photo_url: string;
+}
+
+export interface Review {
+  id: string;
+  author_name: string;
+  comment: string;
+  dish: {
+    id: string,
+    name: string,
+    restaurant: {
+      id: string,
+      name: string
+    }
+  };
+  profile_photo_url: string;
+  rating: number;
+  source: string;
+  timestamp: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  type?: string;
 }

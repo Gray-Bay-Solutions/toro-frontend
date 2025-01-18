@@ -1,19 +1,9 @@
-import '../globals.css'
-import { Inter } from 'next/font/google'
 import AdminLayout from '@/components/admin-layout'
 
-const inter = Inter({ subsets: ['latin'] })
-
-export default function RootLayout({
+export default function AdminRootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AdminLayout>{children}</AdminLayout>
-      </body>
-    </html>
-  )
+  return <AdminLayout>{children}</AdminLayout>
 }

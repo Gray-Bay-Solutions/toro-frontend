@@ -18,7 +18,6 @@ export async function POST(req: Request) {
     }
 
     const token = createToken("admin");
-    console.log("Created token:", token); // Debug log
 
     const response = NextResponse.json({ success: true });
     response.cookies.set("admin-token", token, {

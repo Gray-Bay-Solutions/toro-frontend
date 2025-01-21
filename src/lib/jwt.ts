@@ -5,7 +5,6 @@ import * as jose from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret';
 
 export const createToken = (userId: string): string => {
-  console.log('Creating token with secret:', JWT_SECRET);
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
 };
 

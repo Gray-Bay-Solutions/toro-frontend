@@ -99,7 +99,6 @@ const RestaurantsPage = () => {
     const fetchRestaurants = async () => {
       try {
         const response = await restaurantsApi.getAll();
-        console.log(response.data)
         setRestaurants(response.data);
       } catch (error) {
         console.error('Error fetching restaurants:', error);

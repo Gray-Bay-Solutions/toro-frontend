@@ -69,9 +69,10 @@ export default function DishesPage() {
       icon: Star,
       cell: ({ row }: { row: Row<Dish> }) => {
         const dishId = row.original.id;
+        if (!dishId) return 'No ratings';
         const dishReviews = reviews[dishId] || [];
         if (dishReviews.length === 0) return 'No ratings';
-        const avgRating = dishReviews.reduce((acc, review) => acc + review.rating, 0) / dishReviews.length;
+        const avgRating = dishReviews.reduce((acc: number, review: Review) => acc + review.rating, 0) / dishReviews.length;
         return avgRating.toFixed(1);
       }
     },
@@ -81,6 +82,7 @@ export default function DishesPage() {
       icon: MessageCircle,
       cell: ({ row }: { row: Row<Dish> }) => {
         const dishId = row.original.id;
+        if (!dishId) return '0';
         const dishReviews = reviews[dishId] || [];
         return formatNumber(dishReviews.length);
       }

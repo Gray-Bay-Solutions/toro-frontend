@@ -1,20 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Toro Eats Admin Panel
+
+A Next.js-based admin dashboard for managing restaurant reviews, dishes, and user data for the Toro Eats platform.
+
+## Features
+
+- 📊 Dashboard with real-time statistics
+- 👥 User management
+- 🍽️ Restaurant management
+- ⭐ Review management
+- 🌆 City-based data organization
+- 🔒 Secure admin authentication
+
+## Tech Stack
+
+- [Next.js 15](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Lucide React](https://lucide.dev/) - Icons
+- [Radix UI](https://www.radix-ui.com/) - Headless UI components
+- [TanStack Table](https://tanstack.com/table) - Data tables
+- [Axios](https://axios-http.com/) - API requests
+- [JWT](https://jwt.io/) - Authentication
+
+## Prerequisites
+
+- Node.js 18+ 
+- npm or yarn or pnpm
+- [Toro Backend Server](https://github.com/Volare-Solutions/toro-backend)
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd toro-eats-admin
+    ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Create a `.env` file in the root directory:
+    ```env
+    NEXT_PUBLIC_API_URL=http://localhost:3001
+    JWT_SECRET=your-secret-key
+    ADMIN_PASSWORD=secret-password
+    ```
+
+4. Ensure the [backend server](https://github.com/Volare-Solutions/toro-backend) is running
+
+5. Run the development server:
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    # or
+    pnpm dev
+    ```
+
+6. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Project Structure
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

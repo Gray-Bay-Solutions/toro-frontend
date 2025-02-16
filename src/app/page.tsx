@@ -256,7 +256,7 @@ export default function LandingPage() {
             <DialogTitle>Coming Soon!</DialogTitle>
           </DialogHeader>
           <p className="text-center text-lg text-custom-brown/80">
-            The Toro app will be available in the App Store soon. We're working hard to bring you the best experience possible!
+            The Toro app will be available in the App Store soon. We&apos;re working hard to bring you the best experience possible!
           </p>
         </DialogContent>
       </Dialog>

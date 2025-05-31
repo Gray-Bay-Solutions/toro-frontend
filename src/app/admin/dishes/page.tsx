@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DataTable from '@/components/data-table';
-import { Utensils, Star, DollarSign, MessageCircle, Calendar } from "lucide-react";
-import { dishesApi, reviewsApi } from '@/services';
-import type { Dish, Review } from "@/types/admin";
+import { Utensils, Star, DollarSign, MessageCircle, Calendar, Store, Image } from "lucide-react";
+import { dishesApi, reviewsApi, restaurantsApi } from '@/services';
+import type { Dish, Review, Restaurant } from "@/types/admin";
 import type { Row } from '@tanstack/react-table';
 
 // Consistent number formatter
@@ -37,31 +37,167 @@ const formatDate = (date: any): string => {
   }
 };
 
+// Helper function to extract ID from Firestore document reference
+const getDocumentId = (docRef: any): string => {
+  if (!docRef) return '';
+  
+  // If it's already a string (just an ID)
+  if (typeof docRef === 'string') {
+    return docRef.includes('/') ? docRef.split('/').pop()! : docRef;
+  }
+  
+  // If it's a Firestore DocumentReference object
+  if (docRef && typeof docRef === 'object') {
+    // Try to get ID from the reference
+    if (docRef.id) return docRef.id;
+    
+    // Try to get from _path property
+    if (docRef._path && docRef._path.segments) {
+      return docRef._path.segments[docRef._path.segments.length - 1];
+    }
+    
+    // Try to extract from path string
+    if (docRef.path) {
+      return docRef.path.split('/').pop()!;
+    }
+  }
+  
+  return String(docRef);
+};
+
 export default function DishesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review[]>>({});
   const [loading, setLoading] = useState(true);
+
+  // Form fields for adding/editing dishes
+  const formFields = [
+    { key: 'name', label: 'Dish Name', type: 'text' as const, required: true },
+    { key: 'description', label: 'Description', type: 'textarea' as const, required: true },
+    { key: 'price', label: 'Price ($)', type: 'number' as const, required: true },
+    { 
+      key: 'section', 
+      label: 'Section/Category', 
+      type: 'select' as const, 
+      options: ['Appetizer', 'Main Course', 'Dessert', 'Beverage', 'Side', 'Special', 'Starter', 'Entree', 'Salad', 'Soup'],
+      required: true
+    },
+    { 
+      key: 'restaurant', 
+      label: 'Restaurant', 
+      type: 'select' as const, 
+      options: restaurants.map(r => `${r.name} (${r.id})`),
+      required: true
+    },
+    { key: 'image_url', label: 'Image URL', type: 'url' as const },
+    { 
+      key: 'searchKeywords', 
+      label: 'Search Keywords (comma-separated)', 
+      type: 'textarea' as const,
+      placeholder: 'spicy, vegetarian, gluten-free, popular'
+    }
+  ];
 
   const columns = [
     {
       header: "Name",
       accessorKey: "name",
-      icon: Utensils
+      icon: Utensils,
+      render: (name: string) => (
+        <div className="font-medium">{name}</div>
+      )
     },
     {
-      header: "Description",
-      accessorKey: "description"
+      header: "Restaurant",
+      accessorKey: "restaurant",
+      icon: Store,
+      render: (restaurantRef: any) => {
+        if (!restaurantRef) return 'No restaurant';
+        
+        // Extract restaurant ID from Firestore document reference
+        const restaurantId = getDocumentId(restaurantRef);
+          
+        const restaurant = restaurants.find(r => r.id === restaurantId);
+        return (
+          <div className="flex items-center space-x-2">
+            <Store className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{restaurant?.name || restaurantId}</span>
+          </div>
+        );
+      }
     },
     {
       header: "Section",
-      accessorKey: "section"
+      accessorKey: "section",
+      render: (section: string) => (
+        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
+          {section}
+        </span>
+      )
     },
     {
       header: "Price",
       accessorKey: "price",
       icon: DollarSign,
       isNumber: true,
-      cell: ({ row }: { row: Row<Dish> }) => `$${row.original.price.toFixed(2)}`
+      render: (price: number) => {
+        if (price === null || price === undefined || isNaN(price)) {
+          return <span className="text-gray-400">No price</span>;
+        }
+        return (
+          <span className="font-semibold text-green-600">
+            ${price.toFixed(2)}
+          </span>
+        );
+      }
+    },
+    {
+      header: "Image",
+      accessorKey: "image_url",
+      icon: Image,
+      render: (imageUrl: string) => {
+        if (!imageUrl) return <span className="text-gray-400">No image</span>;
+        return (
+          <a 
+            href={imageUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline text-sm"
+          >
+            Click here
+          </a>
+        );
+      }
+    },
+    {
+      header: "Keywords",
+      accessorKey: "searchKeywords",
+      render: (keywords: string) => {
+        if (!keywords) return <span className="text-gray-400">No keywords</span>;
+        
+        // Convert comma-separated string back to array
+        const keywordArray = keywords.split(',').map(k => k.trim()).filter(k => k);
+        if (keywordArray.length === 0) return <span className="text-gray-400">No keywords</span>;
+        
+        return (
+          <div className="flex flex-wrap gap-1">
+            {keywordArray.slice(0, 2).map((keyword, index) => (
+              <span 
+                key={index}
+                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+              >
+                {keyword}
+              </span>
+            ))}
+            {keywordArray.length > 2 && (
+              <span className="text-xs text-muted-foreground">
+                +{keywordArray.length - 2} more
+              </span>
+            )}
+          </div>
+        );
+      }
     },
     {
       header: "Rating",
@@ -69,11 +205,16 @@ export default function DishesPage() {
       icon: Star,
       cell: ({ row }: { row: Row<Dish> }) => {
         const dishId = row.original.id;
-        if (!dishId) return 'No ratings';
+        if (!dishId) return <span className="text-gray-400">No ratings</span>;
         const dishReviews = reviews[dishId] || [];
-        if (dishReviews.length === 0) return 'No ratings';
+        if (dishReviews.length === 0) return <span className="text-gray-400">No ratings</span>;
         const avgRating = dishReviews.reduce((acc: number, review: Review) => acc + review.rating, 0) / dishReviews.length;
-        return avgRating.toFixed(1);
+        return (
+          <div className="flex items-center space-x-1">
+            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+            <span className="font-medium">{avgRating.toFixed(1)}</span>
+          </div>
+        );
       }
     },
     {
@@ -84,31 +225,37 @@ export default function DishesPage() {
         const dishId = row.original.id;
         if (!dishId) return '0';
         const dishReviews = reviews[dishId] || [];
-        return formatNumber(dishReviews.length);
+        return (
+          <span className="font-medium">
+            {formatNumber(dishReviews.length)}
+          </span>
+        );
       }
     },
     {
       header: "Created",
       accessorKey: "created_at",
       icon: Calendar,
-      cell: ({ row }: { row: Row<Dish> }) => formatDate(row.original.created_at)
-    },
-    {
-      header: "Updated",
-      accessorKey: "updated_at",
-      icon: Calendar,
-      cell: ({ row }: { row: Row<Dish> }) => formatDate(row.original.updated_at)
+      render: (created_at: string) => (
+        <span className="text-sm text-gray-600">
+          {formatDate(created_at)}
+        </span>
+      )
     }
   ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dishesResponse, reviewsResponse] = await Promise.all([
+        const [dishesResponse, reviewsResponse, restaurantsResponse] = await Promise.all([
           dishesApi.getAll(),
-          reviewsApi.getAll()
+          reviewsApi.getAll(),
+          restaurantsApi.getAll()
         ]);
   
+        // Set restaurants first for form population
+        setRestaurants(restaurantsResponse.data);
+
         // Pre-format dates before setting state
         const formattedDishes = dishesResponse.data.map(dish => ({
           ...dish,
@@ -148,12 +295,37 @@ export default function DishesPage() {
   const handleAdd = async (data: Partial<Dish>) => {
     try {
       setLoading(true);
+      
+      // Process restaurant selection (extract ID from "Name (ID)" format or Firestore reference)
+      let restaurantId = '';
+      if (data.restaurant && typeof data.restaurant === 'string' && data.restaurant.includes('(') && data.restaurant.includes(')')) {
+        // Extract from "Name (ID)" format from form
+        restaurantId = data.restaurant.split('(')[1].split(')')[0];
+      } else {
+        // Handle Firestore reference or plain ID
+        restaurantId = getDocumentId(data.restaurant);
+      }
+
+      // Process search keywords if provided from form data
+      const formData = data as any; // Cast to any to access form-specific fields
+      const searchKeywords = formData.searchKeywords 
+        ? (formData.searchKeywords as string).split(',').map((k: string) => k.trim()).filter((k: string) => k)
+        : [];
+
       const now = new Date().toISOString();
-      const response = await dishesApi.create({
-        ...data,
+      const dishData: Partial<Dish> = {
+        name: data.name,
+        description: data.description,
+        price: Number(data.price),
+        section: data.section,
+        restaurant: restaurantId,
+        image_url: data.image_url || '',
+        searchKeywords: searchKeywords.length > 0 ? searchKeywords : undefined,
         created_at: now,
         updated_at: now
-      });
+      };
+      
+      const response = await dishesApi.create(dishData);
       
       // Format dates before adding to state
       const formattedDish = {
@@ -174,10 +346,32 @@ export default function DishesPage() {
   const handleUpdate = async (updatedData: Dish) => {
     try {
       setLoading(true);
-      const response = await dishesApi.update(updatedData.id!, {
+      
+      // Process restaurant selection (extract ID from "Name (ID)" format or Firestore reference)
+      let restaurantId = '';
+      if (updatedData.restaurant && typeof updatedData.restaurant === 'string' && updatedData.restaurant.includes('(') && updatedData.restaurant.includes(')')) {
+        // Extract from "Name (ID)" format from form
+        restaurantId = updatedData.restaurant.split('(')[1].split(')')[0];
+      } else {
+        // Handle Firestore reference or plain ID
+        restaurantId = getDocumentId(updatedData.restaurant);
+      }
+
+      // Process search keywords if provided from form data
+      const formData = updatedData as any; // Cast to any to access form-specific fields
+      const searchKeywords = formData.searchKeywords 
+        ? (formData.searchKeywords as string).split(',').map((k: string) => k.trim()).filter((k: string) => k)
+        : [];
+
+      const dishData: Partial<Dish> = {
         ...updatedData,
+        restaurant: restaurantId,
+        price: Number(updatedData.price),
+        searchKeywords: searchKeywords.length > 0 ? searchKeywords : undefined,
         updated_at: new Date().toISOString()
-      });
+      };
+      
+      const response = await dishesApi.update(updatedData.id!, dishData);
       
       // Format dates before updating state
       const formattedDish = {
@@ -292,11 +486,22 @@ export default function DishesPage() {
         <CardContent>
           <DataTable
             columns={columns}
-            data={dishes}
+            data={dishes.map(dish => {
+              // Convert restaurant ID back to "Name (ID)" format for form display
+              const restaurantId = getDocumentId(dish.restaurant);
+              const restaurant = restaurants.find(r => r.id === restaurantId);
+              
+              return {
+                ...dish,
+                restaurant: restaurant ? `${restaurant.name} (${restaurant.id})` : restaurantId,
+                searchKeywords: dish.searchKeywords?.join(', ') || ''
+              };
+            })}
             onAdd={handleAdd}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             loading={loading}
+            formFields={formFields}
           />
         </CardContent>
       </Card>

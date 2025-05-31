@@ -16,6 +16,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +32,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 
 interface Column {
@@ -37,18 +47,29 @@ interface Column {
   render?: (value: any, row?: any) => React.ReactNode;
 }
 
+interface FormField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'email' | 'url' | 'textarea' | 'select' | 'checkbox' | 'file';
+  options?: string[];
+  placeholder?: string;
+  required?: boolean;
+}
+
 interface DataTableProps {
   columns: Column[];
   data: any[];
   onAdd: (data: any) => void;
   onUpdate: (data: any) => void;
   onDelete: (data: any) => void;
+  onRowClick?: (row: any) => void;
   loading?: boolean;
   pageSize?: number;
+  formFields?: FormField[];
 }
 
 interface FormData {
-  [key: string]: string;
+  [key: string]: string | number | boolean;
 }
 
 interface EditingData {
@@ -70,8 +91,10 @@ const DataTable: React.FC<DataTableProps> = ({
   onAdd,
   onUpdate,
   onDelete,
+  onRowClick,
   loading = false,
-  pageSize = 25
+  pageSize = 25,
+  formFields = []
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -132,7 +155,7 @@ const DataTable: React.FC<DataTableProps> = ({
       : getNestedValue(row, column.accessorKey);
 
     if (column.render) {
-      return column.render(value);
+      return column.render(value, row);
     }
 
     if (column.isStatus) {
@@ -162,6 +185,77 @@ const DataTable: React.FC<DataTableProps> = ({
     }
 
     return value || '-';
+  };
+
+  const renderFormField = (field: FormField, value: any, onChange: (key: string, value: any) => void) => {
+    switch (field.type) {
+      case 'textarea':
+        return (
+          <Textarea
+            value={value || ''}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(field.key, e.target.value)}
+            placeholder={field.placeholder || field.label}
+          />
+        );
+      case 'select':
+        return (
+          <Select value={value || ''} onValueChange={(val) => onChange(field.key, val)}>
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'checkbox':
+        return (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              checked={Boolean(value)}
+              onCheckedChange={(checked: boolean) => onChange(field.key, checked)}
+            />
+            <Label htmlFor={field.key}>{field.label}</Label>
+          </div>
+        );
+      case 'file':
+        return (
+          <Input
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                // Here you would typically handle file upload
+                // For now, we'll just store the file name
+                onChange(field.key, file.name);
+              }
+            }}
+            accept="image/*"
+          />
+        );
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={value || ''}
+            onChange={(e) => onChange(field.key, Number(e.target.value))}
+            placeholder={field.placeholder || field.label}
+          />
+        );
+      default:
+        return (
+          <Input
+            type={field.type}
+            value={value || ''}
+            onChange={(e) => onChange(field.key, e.target.value)}
+            placeholder={field.placeholder || field.label}
+          />
+        );
+    }
   };
 
   const PaginationControls = () => (
@@ -221,28 +315,44 @@ const DataTable: React.FC<DataTableProps> = ({
               Add New
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Record</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {columns.map((column) => (
-                <div key={column.accessorKey}>
-                  <label className="text-sm font-medium">
-                    {column.header}
-                  </label>
-                  <Input
-                    value={formData[column.accessorKey] || ''}
-                    onChange={(e) =>
-                      setFormData(prev => ({
-                        ...prev,
-                        [column.accessorKey]: e.target.value
-                      }))
-                    }
-                    placeholder={column.header}
-                  />
+              {formFields.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formFields.map((field) => (
+                    <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                      <label className="text-sm font-medium block mb-1">
+                        {field.label}
+                        {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      {renderFormField(field, formData[field.key], (key, value) =>
+                        setFormData(prev => ({ ...prev, [key]: value }))
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                columns.map((column) => (
+                  <div key={column.accessorKey}>
+                    <label className="text-sm font-medium">
+                      {column.header}
+                    </label>
+                    <Input
+                      value={String(formData[column.accessorKey] || '')}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          [column.accessorKey]: e.target.value
+                        }))
+                      }
+                      placeholder={column.header}
+                    />
+                  </div>
+                ))
+              )}
               <Button type="submit" className="w-full">
                 Add Record
               </Button>
@@ -265,29 +375,45 @@ const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Record</DialogTitle>
           </DialogHeader>
           {editingData && (
             <form onSubmit={handleUpdate} className="space-y-4">
-              {columns.map((column) => (
-                <div key={column.accessorKey}>
-                  <label className="text-sm font-medium">
-                    {column.header}
-                  </label>
-                  <Input
-                    value={String(editingData[column.accessorKey] || '')}
-                    onChange={(e) =>
-                      setEditingData(prev => ({
-                        ...prev,
-                        [column.accessorKey]: e.target.value
-                      }))
-                    }
-                    placeholder={column.header}
-                  />
+              {formFields.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formFields.map((field) => (
+                    <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                      <label className="text-sm font-medium block mb-1">
+                        {field.label}
+                        {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      {renderFormField(field, editingData[field.key], (key, value) =>
+                        setEditingData(prev => ({ ...prev, [key]: value }))
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                columns.map((column) => (
+                  <div key={column.accessorKey}>
+                    <label className="text-sm font-medium">
+                      {column.header}
+                    </label>
+                    <Input
+                      value={String(editingData[column.accessorKey] || '')}
+                      onChange={(e) =>
+                        setEditingData(prev => ({
+                          ...prev,
+                          [column.accessorKey]: e.target.value
+                        }))
+                      }
+                      placeholder={column.header}
+                    />
+                  </div>
+                ))
+              )}
               <div className="flex space-x-2 justify-end">
                 <Button
                   type="button"
@@ -344,7 +470,11 @@ const DataTable: React.FC<DataTableProps> = ({
               </TableRow>
             ) : (
               paginatedData.map((row, i) => (
-                <TableRow key={i}>
+                <TableRow 
+                  key={i}
+                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => onRowClick?.(row)}
+                >
                   {columns.map((column) => (
                     <TableCell key={column.accessorKey}>
                       {renderCell(column, row)}
@@ -353,7 +483,12 @@ const DataTable: React.FC<DataTableProps> = ({
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={loading}>
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 w-8 p-0" 
+                          disabled={loading}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

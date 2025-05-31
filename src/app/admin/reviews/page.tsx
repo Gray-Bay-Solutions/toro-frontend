@@ -7,7 +7,7 @@ import { MessageCircle, Star, Store, Users, Calendar, User } from "lucide-react"
 import { reviewsApi } from '@/services';
 import { Review } from '@/types/admin';
 import type { Row } from '@tanstack/react-table';
-
+import Image from 'next/image';
 const columns = [
   {
     header: "Dish",
@@ -51,10 +51,12 @@ const columns = [
     cell: ({ row }: { row: Row<Review> }) => (
       <div className="flex items-center gap-2">
         {row.original.profile_photo_url && (
-          <img 
+          <Image 
             src={row.original.profile_photo_url} 
             alt={row.original.author_name}
             className="w-6 h-6 rounded-full"
+            width={24}
+            height={24}
           />
         )}
         <span>{row.original.author_name || 'Anonymous'}</span>

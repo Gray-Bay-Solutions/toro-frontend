@@ -19,14 +19,16 @@ export interface BusinessHoursData {
 }
 
 export interface Restaurant {
-  id: string,
+  id: string;
   address: string;
+  addressFull: string;
   averageRating: number;
   businessHours: string[];
   categories: string[];
   createdAt: string;
   imageUrl: string;
   isClosed: boolean;
+  is_sponsored: boolean;
   is_verified: boolean;
   location: {
     latitude: number;
@@ -35,8 +37,11 @@ export interface Restaurant {
   name: string;
   phone: string;
   price_level: number;
+  searchKeywords: string[];
   state: string;
+  status: string;
   totalRatings: number;
+  updatedAt: string;
   website: string;
   yelpId: string;
   zip: string;
@@ -62,6 +67,9 @@ export interface Dish {
   section: string;
   restaurant: string;
   image_url: string;
+  average_rating?: number;
+  review_count?: number;
+  searchKeywords?: string[];
   created_at: string;
   updated_at: string;
 }

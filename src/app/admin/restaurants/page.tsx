@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DataTable from '@/components/data-table';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Utensils, Star, MapPin, Phone, Globe, MessageCircle, CheckCircle2 } from "lucide-react";
@@ -16,8 +17,7 @@ const columns = [
   },
   {
     header: "Address",
-    accessorKey: "address.full",
-    accessorFn: (row: Restaurant) => row.address,
+    accessorKey: "address",
     icon: MapPin,
     render: (address: string) => (
       <a
@@ -40,6 +40,7 @@ const columns = [
     accessorKey: "website", 
     icon: Globe,
     render: (website: string) => {
+      if (!website) return '-';
       const displayUrl = website.length > 30 ? website.substring(0, 30) + '...' : website;
       return (
         <a 
@@ -67,17 +68,8 @@ const columns = [
   },
   {
     header: "Status",
-    accessorKey: "businessHours",
-    render: (hours: string[]) => {
-      const isOpen = isBusinessOpen(hours);
-      return (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {isOpen ? 'Open' : 'Closed'}
-        </span>
-      );
-    }
+    accessorKey: "status",
+    isStatus: true
   },
   {
     header: "Price",
@@ -86,6 +78,66 @@ const columns = [
       if (!value) return 'Unspecified';
       return '$'.repeat(value);
     }
+  },
+  {
+    header: "Verified",
+    accessorKey: "is_verified",
+    render: (value: boolean) => (
+      <span className={`px-2 py-1 rounded-full text-xs ${
+        value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+      }`}>
+        {value ? 'Verified' : 'Unverified'}
+      </span>
+    )
+  }
+];
+
+const formFields = [
+  { key: 'name', label: 'Restaurant Name', type: 'text' as const, required: true },
+  { key: 'address', label: 'Street Address', type: 'text' as const, required: true },
+  { key: 'addressFull', label: 'Full Address', type: 'text' as const, required: true },
+  { key: 'phone', label: 'Phone Number', type: 'text' as const },
+  { key: 'website', label: 'Website URL', type: 'url' as const },
+  { key: 'yelpId', label: 'Yelp ID', type: 'text' as const },
+  { key: 'state', label: 'State', type: 'text' as const, required: true },
+  { key: 'zip', label: 'ZIP Code', type: 'text' as const, required: true },
+  { 
+    key: 'price_level', 
+    label: 'Price Level', 
+    type: 'select' as const, 
+    options: ['1', '2', '3', '4'],
+    placeholder: 'Select price level (1-4)'
+  },
+  { 
+    key: 'status', 
+    label: 'Status', 
+    type: 'select' as const, 
+    options: ['active', 'inactive', 'pending', 'closed'],
+    required: true
+  },
+  { key: 'averageRating', label: 'Average Rating', type: 'number' as const },
+  { key: 'totalRatings', label: 'Total Ratings', type: 'number' as const },
+  { key: 'imageUrl', label: 'Image URL', type: 'url' as const },
+  { key: 'is_verified', label: 'Verified', type: 'checkbox' as const },
+  { key: 'is_sponsored', label: 'Sponsored', type: 'checkbox' as const },
+  { key: 'isClosed', label: 'Currently Closed', type: 'checkbox' as const },
+  { 
+    key: 'categories', 
+    label: 'Categories (comma-separated)', 
+    type: 'textarea' as const,
+    placeholder: 'e.g., Italian, Pizza, Fine Dining'
+  },
+  { 
+    key: 'businessHours', 
+    label: 'Business Hours (one per line)', 
+    type: 'textarea' as const,
+    placeholder: 'Monday: 9:00 AM - 9:00 PM\nTuesday: 9:00 AM - 9:00 PM\n...'
+  },
+  { 
+    key: 'searchKeywords', 
+    label: 'Search Keywords (comma-separated)', 
+    type: 'textarea' as const,
+    placeholder: 'pizza, italian, delivery, family-friendly'
   }
 ];
 
@@ -94,6 +146,7 @@ const initialRestaurants: Restaurant[] = [];
 const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -110,50 +163,35 @@ const RestaurantsPage = () => {
     fetchRestaurants();
   }, []);
 
+  const handleRowClick = (restaurant: Restaurant) => {
+    router.push(`/admin/restaurants/${restaurant.id}`);
+  };
+
   const handleAdd = async (data: any) => {
     try {
-      const newRestaurant = {
+      // Process form data before sending
+      const processedData = {
         ...data,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        last_scraped: new Date(),
-        data_source: 'manual' as const,
-        google_place_id: null,
-        address: {
-          full: data.address || '',
-          street: null,
-          city: '',
-          state: '',
-          zip: '',
-          country: 'US',
-          coordinates: {
-            latitude: 0,
-            longitude: 0
-          }
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        averageRating: Number(data.averageRating) || 0,
+        totalRatings: Number(data.totalRatings) || 0,
+        price_level: Number(data.price_level) || 1,
+        location: {
+          latitude: 0,
+          longitude: 0
         },
-        rating: {
-          average: 0,
-          total: 0,
-          yelp: {
-            rating: 0,
-            total: 0
-          },
-          google: null
-        },
-        images: {
-          primary: null,
-          gallery: []
-        },
-        categories: [],
-        transactions: [],
-        attributes: {},
-        operating_hours: {
-          periods: [],
-          weekday_text: []
-        }
+        // Process comma-separated values into arrays
+        categories: data.categories ? data.categories.split(',').map((c: string) => c.trim()) : [],
+        businessHours: data.businessHours ? data.businessHours.split('\n').filter((h: string) => h.trim()) : [],
+        searchKeywords: data.searchKeywords ? data.searchKeywords.split(',').map((k: string) => k.trim()) : [],
+        // Convert checkbox values
+        is_verified: Boolean(data.is_verified),
+        is_sponsored: Boolean(data.is_sponsored),
+        isClosed: Boolean(data.isClosed)
       };
-      const response = await restaurantsApi.create(newRestaurant);
+
+      const response = await restaurantsApi.create(processedData);
       setRestaurants([...restaurants, response.data]);
     } catch (error) {
       console.error('Error adding restaurant:', error);
@@ -165,7 +203,28 @@ const RestaurantsPage = () => {
       if (!updatedData.id) {
         throw new Error("Error getting restaurant ID");
       }
-      const response = await restaurantsApi.update(updatedData.id, updatedData);
+
+      // Process form data similar to handleAdd
+      const processedData = {
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+        averageRating: Number(updatedData.averageRating) || 0,
+        totalRatings: Number(updatedData.totalRatings) || 0,
+        price_level: Number(updatedData.price_level) || 1,
+      };
+
+      // Process arrays if they're strings
+      if (typeof updatedData.categories === 'string') {
+        processedData.categories = (updatedData.categories as string).split(',').map((c: string) => c.trim());
+      }
+      if (typeof updatedData.businessHours === 'string') {
+        processedData.businessHours = (updatedData.businessHours as string).split('\n').filter((h: string) => h.trim());
+      }
+      if (typeof updatedData.searchKeywords === 'string') {
+        processedData.searchKeywords = (updatedData.searchKeywords as string).split(',').map((k: string) => k.trim());
+      }
+
+      const response = await restaurantsApi.update(updatedData.id, processedData);
       setRestaurants(restaurants.map(restaurant => 
         restaurant.id === updatedData.id ? response.data : restaurant
       ));
@@ -263,6 +322,8 @@ const RestaurantsPage = () => {
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             loading={loading}
+            formFields={formFields}
+            onRowClick={handleRowClick}
           />
         </CardContent>
       </Card>
